@@ -6,37 +6,44 @@ try {
     $pdo = new PDO('sqlite:' . $dbPath);
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
+    $pdo->exec("
+        CREATE TABLE IF NOT EXISTS Users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT UNIQUE NOT NULL,
+            password TEXT NOT NULL,
+            role TEXT DEFAULT 'user'
+        )
+    ");
+
+    $pdo->exec("
+        CREATE TABLE IF NOT EXISTS Categories (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT UNIQUE NOT NULL
+        )
+    ");
+
+    $pdo->exec("
+        CREATE TABLE IF NOT EXISTS Expenses (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            category_id INTEGER NOT NULL,
+            amount INTEGER NOT NULL,
+            date TEXT NOT NULL,
+            year_month TEXT NOT NULL,
+            description TEXT,
+            receipt_file_path TEXT,
+            FOREIGN KEY (user_id) REFERENCES Users(id),
+            FOREIGN KEY (category_id) REFERENCES Categories(id)
+        )
+    ");
+
+    $pdo->exec("
+        CREATE TABLE IF NOT EXISTS Closings (
+            year_month TEXT PRIMARY KEY
+        )
+    ");
+
     if ($isNew) {
-        $pdo->exec("
-            CREATE TABLE IF NOT EXISTS Users (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                username TEXT UNIQUE NOT NULL,
-                password TEXT NOT NULL,
-                role TEXT DEFAULT 'user'
-            )
-        ");
-
-        $pdo->exec("
-            CREATE TABLE IF NOT EXISTS Categories (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                name TEXT UNIQUE NOT NULL
-            )
-        ");
-
-        $pdo->exec("
-            CREATE TABLE IF NOT EXISTS Expenses (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                user_id INTEGER NOT NULL,
-                category_id INTEGER NOT NULL,
-                amount INTEGER NOT NULL,
-                date TEXT NOT NULL,
-                year_month TEXT NOT NULL,
-                description TEXT,
-                receipt_file_path TEXT,
-                FOREIGN KEY (user_id) REFERENCES Users(id),
-                FOREIGN KEY (category_id) REFERENCES Categories(id)
-            )
-        ");
 
         // Insert default user
         $stmt = $pdo->prepare("INSERT INTO Users (username, password, role) VALUES (?, ?, ?)");

@@ -2,7 +2,7 @@
 import { ref, onMounted } from 'vue';
 import { useExpenseStore } from '../store/expense';
 import { useRouter } from 'vue-router';
-import { Save, UploadCloud } from 'lucide-vue-next';
+import { Save, UploadCloud, AlertCircle } from 'lucide-vue-next';
 
 const expenseStore = useExpenseStore();
 const router = useRouter();
@@ -43,10 +43,13 @@ const submit = async () => {
     return;
   }
   
-  isSubmitting.value = true;
+  const yearMonth = form.value.date.slice(0, 7);
+  if (expenseStore.closedMonths.includes(yearMonth)) {
+    alert('この月は締め込み済みのため、経費を追加できません。');
+    return;
+  }
   
-  const d = new Date(form.value.date);
-  const yearMonth = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+  isSubmitting.value = true;
   
   const payload = {
     ...form.value,
@@ -69,6 +72,11 @@ const submit = async () => {
   <div class="add-expense fade-enter-active">
     <div class="header-actions">
       <h2>新しい経費の追加</h2>
+    </div>
+
+    <div v-if="form.date && expenseStore.closedMonths.includes(form.date.slice(0, 7))" class="closed-alert">
+      <AlertCircle :size="16" style="margin-right: 8px;" />
+      ※選択された月は締め込み済みのため、保存できません。
     </div>
 
     <div class="glass glass-panel form-container">
@@ -114,7 +122,7 @@ const submit = async () => {
 
         <div class="form-actions">
           <button type="button" class="btn btn-danger" @click="router.push('/expenses')">キャンセル</button>
-          <button type="submit" class="btn btn-primary" :disabled="isSubmitting">
+          <button type="submit" class="btn btn-primary" :disabled="isSubmitting || !!(form.date && expenseStore.closedMonths.includes(form.date.slice(0, 7)))">
             <Save :size="18" style="margin-right: 8px;" />
             {{ isSubmitting ? '保存中...' : '経費を保存' }}
           </button>
@@ -125,7 +133,20 @@ const submit = async () => {
 </template>
 
 <style scoped>
+.closed-alert {
+  background: rgba(239, 68, 68, 0.1);
+  color: var(--danger);
+  padding: 12px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
 .header-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   margin-bottom: 24px;
 }
 .form-container {

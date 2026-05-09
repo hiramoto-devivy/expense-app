@@ -18,6 +18,12 @@ $method = $_SERVER['REQUEST_METHOD'];
 // Helper to get ID from query string since we're using query params for routing simplicity without rewrite rules
 $id = $_GET['id'] ?? null;
 
+function is_month_closed($pdo, $yearMonth) {
+    $stmt = $pdo->prepare('SELECT 1 FROM Closings WHERE year_month = ?');
+    $stmt->execute([$yearMonth]);
+    return $stmt->fetch() !== false;
+}
+
 if ($method === 'GET') {
     $yearMonth = $_GET['year_month'] ?? null;
     $query = 'SELECT Expenses.*, Categories.name as category_name FROM Expenses LEFT JOIN Categories ON Expenses.category_id = Categories.id WHERE user_id = ?';
@@ -38,6 +44,12 @@ if ($method === 'GET') {
 elseif ($method === 'POST') {
     $input = json_decode(file_get_contents('php://input'), true);
     
+    if (is_month_closed($pdo, $input['year_month'])) {
+        http_response_code(403);
+        echo json_encode(['error' => 'This month is closed']);
+        exit;
+    }
+
     $receiptPath = null;
     if (!empty($input['receipt_base64']) && !empty($input['receipt_name'])) {
         $ext = strtolower(pathinfo($input['receipt_name'], PATHINFO_EXTENSION));
@@ -71,12 +83,29 @@ elseif ($method === 'POST') {
     echo json_encode(['id' => $pdo->lastInsertId()]);
 }
 elseif ($method === 'DELETE' && $id) {
+    // Check if the expense's month is closed
+    $stmtCheck = $pdo->prepare('SELECT year_month FROM Expenses WHERE id = ?');
+    $stmtCheck->execute([$id]);
+    $exp = $stmtCheck->fetch();
+    if ($exp && is_month_closed($pdo, $exp['year_month'])) {
+        http_response_code(403);
+        echo json_encode(['error' => 'This month is closed']);
+        exit;
+    }
+
     $stmt = $pdo->prepare('DELETE FROM Expenses WHERE id = ? AND user_id = ?');
     $stmt->execute([$id, $user['id']]);
     echo json_encode(['success' => true]);
 }
 elseif ($method === 'PUT' && $id) {
     $input = json_decode(file_get_contents('php://input'), true);
+    
+    if (is_month_closed($pdo, $input['year_month'])) {
+        http_response_code(403);
+        echo json_encode(['error' => 'This month is closed']);
+        exit;
+    }
+
     $stmt = $pdo->prepare("
         UPDATE Expenses SET category_id = ?, amount = ?, date = ?, year_month = ?, description = ?
         WHERE id = ? AND user_id = ?

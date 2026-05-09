@@ -1,12 +1,28 @@
 <script setup lang="ts">
-import { onMounted, ref, watch } from 'vue';
+import { ref, onMounted, watch, computed } from 'vue';
 import { useExpenseStore } from '../store/expense';
-import { Trash2, FileText, Image as ImageIcon } from 'lucide-vue-next';
+import { useAuthStore } from '../store/auth';
+import { Trash2, FileText, Image as ImageIcon, Lock, Unlock } from 'lucide-vue-next';
 
 const expenseStore = useExpenseStore();
+const authStore = useAuthStore();
 
 const currentDate = new Date();
 const currentYearMonth = ref(`${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`);
+
+const isMonthClosed = computed(() => {
+  return expenseStore.closedMonths.includes(currentYearMonth.value);
+});
+
+const toggleMonthStatus = async () => {
+  if (!authStore.user || authStore.user.role !== 'admin') return;
+  const closing = !isMonthClosed.value;
+  const msg = closing ? 'この月を締めますか？（追加・編集・削除ができなくなります）' : 'この月の締めを解除しますか？';
+  if (confirm(msg)) {
+    const success = await expenseStore.toggleClosing(currentYearMonth.value, closing);
+    if (!success) alert('状態の変更に失敗しました');
+  }
+};
 
 const fetchList = async () => {
   await expenseStore.fetchExpenses(currentYearMonth.value);
@@ -37,9 +53,21 @@ const openReceipt = (filename: string) => {
 
 <template>
   <div class="expense-list fade-enter-active">
+    <div v-if="isMonthClosed" class="closed-alert">
+      <Lock :size="16" style="margin-right: 8px;" />
+      この月は締め込み済みのため、経費の追加・編集・削除はできません。
+    </div>
+
     <div class="header-actions">
       <h2>経費一覧</h2>
-      <input type="month" v-model="currentYearMonth" class="form-input month-picker" />
+      <div class="actions-right">
+        <button v-if="authStore.user?.role === 'admin'" @click="toggleMonthStatus" class="btn" :class="isMonthClosed ? 'btn-danger' : 'btn-primary'" style="margin-right: 12px;">
+          <Lock v-if="!isMonthClosed" :size="18" style="margin-right: 6px;" />
+          <Unlock v-else :size="18" style="margin-right: 6px;" />
+          {{ isMonthClosed ? '🔓 締めを解除' : '🔒 月を締める' }}
+        </button>
+        <input type="month" v-model="currentYearMonth" class="form-input month-picker" />
+      </div>
     </div>
 
     <div class="glass glass-panel table-container">
@@ -71,9 +99,10 @@ const openReceipt = (filename: string) => {
               <span v-else class="text-muted">-</span>
             </td>
             <td>
-              <button @click="deleteExpense(exp.id)" class="btn-icon danger" title="削除">
+              <button v-if="!isMonthClosed" @click="deleteExpense(exp.id)" class="btn-icon danger" title="削除">
                 <Trash2 :size="18" />
               </button>
+              <span v-else class="text-muted"><Lock :size="14"/></span>
             </td>
           </tr>
         </tbody>
@@ -83,11 +112,25 @@ const openReceipt = (filename: string) => {
 </template>
 
 <style scoped>
+.closed-alert {
+  background: rgba(239, 68, 68, 0.1);
+  color: var(--danger);
+  padding: 12px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
 .header-actions {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 24px;
+}
+.actions-right {
+  display: flex;
+  align-items: center;
 }
 .month-picker {
   width: auto;

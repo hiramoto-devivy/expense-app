@@ -5,6 +5,7 @@ import { useAuthStore } from './auth';
 export const useExpenseStore = defineStore('expense', () => {
   const expenses = ref<any[]>([]);
   const categories = ref<any[]>([]);
+  const closedMonths = ref<string[]>([]);
   const authStore = useAuthStore();
 
   const getHeaders = () => ({
@@ -33,8 +34,39 @@ export const useExpenseStore = defineStore('expense', () => {
         const data = await res.json();
         expenses.value = data.expenses;
       } else if (res.status === 401) authStore.logout();
+
+      await fetchClosings();
     } catch (e) {
-      console.error(e);
+      console.error('Failed to fetch expenses', e);
+    }
+  };
+
+  const fetchClosings = async () => {
+    try {
+      const res = await fetch('/api/closings.php', { headers: getHeaders() });
+      if (res.ok) {
+        const data = await res.json();
+        closedMonths.value = data.closed_months;
+      }
+    } catch (e) {
+      console.error('Failed to fetch closings', e);
+    }
+  };
+
+  const toggleClosing = async (yearMonth: string, isClosed: boolean) => {
+    try {
+      const res = await fetch('/api/closings.php', {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify({ year_month: yearMonth, is_closed: isClosed })
+      });
+      if (res.ok) {
+        await fetchClosings();
+        return true;
+      }
+      return false;
+    } catch (e) {
+      return false;
     }
   };
 
@@ -73,5 +105,5 @@ export const useExpenseStore = defineStore('expense', () => {
     }
   };
 
-  return { expenses, categories, fetchCategories, fetchExpenses, addExpense, deleteExpense };
+  return { expenses, categories, closedMonths, fetchCategories, fetchExpenses, fetchClosings, toggleClosing, addExpense, deleteExpense };
 });
