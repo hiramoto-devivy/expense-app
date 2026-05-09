@@ -39,7 +39,7 @@ const handleFileUpload = (event: Event) => {
 
 const submit = async () => {
   if (!form.value.category_id || !form.value.amount || !form.value.date) {
-    alert('Please fill all required fields');
+    alert('必須項目をすべて入力してください');
     return;
   }
   
@@ -60,7 +60,7 @@ const submit = async () => {
   if (success) {
     router.push('/expenses');
   } else {
-    alert('Failed to add expense');
+    alert('経費の追加に失敗しました');
   }
 };
 </script>
@@ -68,21 +68,21 @@ const submit = async () => {
 <template>
   <div class="add-expense fade-enter-active">
     <div class="header-actions">
-      <h2>Add New Expense</h2>
+      <h2>新しい経費の追加</h2>
     </div>
 
     <div class="glass glass-panel form-container">
       <form @submit.prevent="submit">
         <div class="form-grid">
           <div class="form-group">
-            <label class="form-label">Date *</label>
+            <label class="form-label">日付 *</label>
             <input v-model="form.date" type="date" class="form-input" required />
           </div>
           
           <div class="form-group">
-            <label class="form-label">Category *</label>
+            <label class="form-label">カテゴリ *</label>
             <select v-model="form.category_id" class="form-select" required>
-              <option value="" disabled>Select Category</option>
+              <option value="" disabled>カテゴリを選択</option>
               <option v-for="cat in expenseStore.categories" :key="cat.id" :value="cat.id">
                 {{ cat.name }}
               </option>
@@ -91,32 +91,32 @@ const submit = async () => {
         </div>
         
         <div class="form-group">
-          <label class="form-label">Amount (JPY) *</label>
-          <input v-model="form.amount" type="number" min="1" class="form-input" required placeholder="e.g. 1500" />
+          <label class="form-label">金額 (円) *</label>
+          <input v-model="form.amount" type="number" min="1" class="form-input" required placeholder="例：1500" />
         </div>
         
         <div class="form-group">
-          <label class="form-label">Description</label>
-          <input v-model="form.description" type="text" class="form-input" placeholder="e.g. Client Lunch" />
+          <label class="form-label">メモ</label>
+          <input v-model="form.description" type="text" class="form-input" placeholder="例：クライアントとの昼食" />
         </div>
 
         <div class="form-group">
-          <label class="form-label">Receipt (Image/PDF)</label>
+          <label class="form-label">領収書（画像/PDF）</label>
           <div class="file-upload-wrapper">
             <input type="file" id="file" @change="handleFileUpload" accept="image/*,application/pdf" class="file-input" />
             <label for="file" class="file-label">
               <UploadCloud :size="24" class="upload-icon" />
               <span v-if="form.receipt_name">{{ form.receipt_name }}</span>
-              <span v-else>Click to upload or drag & drop</span>
+              <span v-else>クリックしてアップロード、またはドラッグ＆ドロップ</span>
             </label>
           </div>
         </div>
 
         <div class="form-actions">
-          <button type="button" class="btn btn-danger" @click="router.push('/expenses')">Cancel</button>
+          <button type="button" class="btn btn-danger" @click="router.push('/expenses')">キャンセル</button>
           <button type="submit" class="btn btn-primary" :disabled="isSubmitting">
             <Save :size="18" style="margin-right: 8px;" />
-            {{ isSubmitting ? 'Saving...' : 'Save Expense' }}
+            {{ isSubmitting ? '保存中...' : '経費を保存' }}
           </button>
         </div>
       </form>

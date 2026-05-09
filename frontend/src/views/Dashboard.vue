@@ -46,8 +46,8 @@ const formatCurrency = (amount: number) => {
 <template>
   <div class="dashboard fade-enter-active">
     <div class="welcome-box glass glass-panel">
-      <h2>Hello, {{ authStore.user?.username }}! 👋</h2>
-      <p>Here is your expense summary for this month.</p>
+      <h2>こんにちは、{{ authStore.user?.username }}さん！ 👋</h2>
+      <p>今月の経費サマリーはこちらです。</p>
     </div>
 
     <div class="controls">
@@ -56,15 +56,15 @@ const formatCurrency = (amount: number) => {
 
     <div class="summary-cards">
       <div class="glass glass-panel card total-card">
-        <h3>Total Expenses</h3>
+        <h3>合計経費</h3>
         <div class="amount">{{ formatCurrency(totalAmount) }}</div>
       </div>
     </div>
 
     <div class="glass glass-panel category-breakdown">
-      <h3>Category Breakdown</h3>
+      <h3>カテゴリ別の内訳</h3>
       <div v-if="categorySummary.length === 0" class="empty-state">
-        No expenses found for this month.
+        今月の経費は見つかりませんでした。
       </div>
       <div v-else class="bar-chart">
         <div v-for="[category, amount] in categorySummary" :key="category" class="bar-row">

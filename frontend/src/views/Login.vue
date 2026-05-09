@@ -28,10 +28,10 @@ const login = async () => {
       router.push('/');
     } else {
       const data = await res.json();
-      error.value = data.error || 'Login failed';
+      error.value = data.error || 'ログインに失敗しました';
     }
   } catch (e) {
-    error.value = 'Network error';
+    error.value = 'ネットワークエラー';
   } finally {
     isLoading.value = false;
   }
@@ -42,26 +42,26 @@ const login = async () => {
   <div class="login-wrapper">
     <div class="glass glass-panel login-box">
       <div class="login-header">
-        <h2>Welcome Back</h2>
-        <p>Sign in to manage your expenses</p>
+        <h2>ログイン</h2>
+        <p>経費を管理するためにサインインしてください</p>
       </div>
       
       <div v-if="error" class="error-alert">{{ error }}</div>
       
       <form @submit.prevent="login">
         <div class="form-group">
-          <label class="form-label">Username</label>
+          <label class="form-label">ユーザー名</label>
           <input v-model="username" type="text" class="form-input" required />
         </div>
         
         <div class="form-group">
-          <label class="form-label">Password</label>
+          <label class="form-label">パスワード</label>
           <input v-model="password" type="password" class="form-input" required />
         </div>
         
         <button type="submit" class="btn btn-primary w-100" :disabled="isLoading">
           <LogIn :size="18" style="margin-right: 8px;" />
-          {{ isLoading ? 'Signing in...' : 'Sign In' }}
+          {{ isLoading ? 'サインイン中...' : 'サインイン' }}
         </button>
       </form>
     </div>

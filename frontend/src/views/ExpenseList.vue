@@ -21,7 +21,7 @@ watch(currentYearMonth, () => {
 });
 
 const deleteExpense = async (id: number) => {
-  if (confirm('Are you sure you want to delete this expense?')) {
+  if (confirm('この経費を削除してもよろしいですか？')) {
     await expenseStore.deleteExpense(id);
   }
 };
@@ -38,7 +38,7 @@ const openReceipt = (filename: string) => {
 <template>
   <div class="expense-list fade-enter-active">
     <div class="header-actions">
-      <h2>Expense List</h2>
+      <h2>経費一覧</h2>
       <input type="month" v-model="currentYearMonth" class="form-input month-picker" />
     </div>
 
@@ -46,17 +46,17 @@ const openReceipt = (filename: string) => {
       <table class="expense-table">
         <thead>
           <tr>
-            <th>Date</th>
-            <th>Category</th>
-            <th>Description</th>
-            <th>Amount</th>
-            <th>Receipt</th>
-            <th>Actions</th>
+            <th>日付</th>
+            <th>カテゴリ</th>
+            <th>メモ</th>
+            <th>金額</th>
+            <th>領収書</th>
+            <th>アクション</th>
           </tr>
         </thead>
         <tbody>
           <tr v-if="expenseStore.expenses.length === 0">
-            <td colspan="6" class="empty-state">No expenses found for this month.</td>
+            <td colspan="6" class="empty-state">今月の経費は見つかりませんでした。</td>
           </tr>
           <tr v-for="exp in expenseStore.expenses" :key="exp.id">
             <td>{{ exp.date }}</td>
@@ -64,14 +64,14 @@ const openReceipt = (filename: string) => {
             <td>{{ exp.description || '-' }}</td>
             <td class="amount-cell">{{ formatCurrency(exp.amount) }}</td>
             <td>
-              <button v-if="exp.receipt_file_path" @click="openReceipt(exp.receipt_file_path)" class="btn-icon" title="View Receipt">
+              <button v-if="exp.receipt_file_path" @click="openReceipt(exp.receipt_file_path)" class="btn-icon" title="領収書を見る">
                 <FileText :size="18" v-if="exp.receipt_file_path.endsWith('.pdf')" />
                 <ImageIcon :size="18" v-else />
               </button>
               <span v-else class="text-muted">-</span>
             </td>
             <td>
-              <button @click="deleteExpense(exp.id)" class="btn-icon danger" title="Delete">
+              <button @click="deleteExpense(exp.id)" class="btn-icon danger" title="削除">
                 <Trash2 :size="18" />
               </button>
             </td>
