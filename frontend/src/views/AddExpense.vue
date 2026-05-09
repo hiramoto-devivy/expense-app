@@ -1,11 +1,15 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import { useExpenseStore } from '../store/expense';
-import { useRouter } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { Save, UploadCloud, AlertCircle } from 'lucide-vue-next';
 
 const expenseStore = useExpenseStore();
+const route = useRoute();
 const router = useRouter();
+
+const isEditing = ref(false);
+const editId = ref<number | null>(null);
 
 const form = ref({
   date: new Date().toISOString().split('T')[0],
@@ -18,9 +22,27 @@ const form = ref({
 
 const isSubmitting = ref(false);
 
-onMounted(() => {
+onMounted(async () => {
   if (expenseStore.categories.length === 0) {
-    expenseStore.fetchCategories();
+    await expenseStore.fetchCategories();
+  }
+  
+  if (route.params.id) {
+    isEditing.value = true;
+    editId.value = parseInt(route.params.id as string, 10);
+    
+    // Find the expense to edit. (Assume it's in the current list, or we could fetch it)
+    const exp = expenseStore.expenses.find(e => e.id === editId.value);
+    if (exp) {
+      form.value.date = exp.date;
+      form.value.category_id = exp.category_id;
+      form.value.amount = exp.amount;
+      form.value.description = exp.description || '';
+      // We don't populate receipt_base64, it requires a new upload to overwrite
+    } else {
+      alert('指定された経費が見つかりません');
+      router.push('/expenses');
+    }
   }
 });
 
@@ -54,16 +76,21 @@ const submit = async () => {
   const payload = {
     ...form.value,
     year_month: yearMonth,
-    amount: parseInt(form.value.amount, 10)
+    amount: parseInt(form.value.amount as string, 10)
   };
   
-  const success = await expenseStore.addExpense(payload);
+  let success = false;
+  if (isEditing.value && editId.value) {
+    success = await expenseStore.updateExpense(editId.value, payload);
+  } else {
+    success = await expenseStore.addExpense(payload);
+  }
   
   isSubmitting.value = false;
   if (success) {
     router.push('/expenses');
   } else {
-    alert('経費の追加に失敗しました');
+    alert(isEditing.value ? '経費の更新に失敗しました' : '経費の追加に失敗しました');
   }
 };
 </script>
@@ -71,7 +98,7 @@ const submit = async () => {
 <template>
   <div class="add-expense fade-enter-active">
     <div class="header-actions">
-      <h2>新しい経費の追加</h2>
+      <h2>{{ isEditing ? '経費の編集' : '新しい経費の追加' }}</h2>
     </div>
 
     <div v-if="form.date && expenseStore.closedMonths.includes(form.date.slice(0, 7))" class="closed-alert">
@@ -157,6 +184,11 @@ const submit = async () => {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 16px;
+}
+@media (max-width: 768px) {
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
 }
 .file-input {
   display: none;

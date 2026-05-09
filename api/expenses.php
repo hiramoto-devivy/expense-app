@@ -106,19 +106,40 @@ elseif ($method === 'PUT' && $id) {
         exit;
     }
 
-    $stmt = $pdo->prepare("
-        UPDATE Expenses SET category_id = ?, amount = ?, date = ?, year_month = ?, description = ?
-        WHERE id = ? AND user_id = ?
-    ");
-    $stmt->execute([
+    $updateReceiptSql = "";
+    $params = [
         $input['category_id'],
         $input['amount'],
         $input['date'],
         $input['year_month'],
-        $input['description'] ?? '',
-        $id,
-        $user['id']
-    ]);
+        $input['description'] ?? ''
+    ];
+
+    if (!empty($input['receipt_base64']) && !empty($input['receipt_name'])) {
+        $ext = strtolower(pathinfo($input['receipt_name'], PATHINFO_EXTENSION));
+        $filename = time() . '-' . rand(100, 999) . '.' . $ext;
+        
+        $base64 = $input['receipt_base64'];
+        if (strpos($base64, ',') !== false) {
+            $base64 = explode(',', $base64)[1];
+        }
+        
+        $data = base64_decode($base64);
+        file_put_contents(__DIR__ . '/uploads/' . $filename, $data);
+        
+        $updateReceiptSql = ", receipt_file_path = ?";
+        $params[] = $filename;
+    }
+
+    $params[] = $id;
+    $params[] = $user['id'];
+
+    $stmt = $pdo->prepare("
+        UPDATE Expenses SET category_id = ?, amount = ?, date = ?, year_month = ?, description = ?
+        $updateReceiptSql
+        WHERE id = ? AND user_id = ?
+    ");
+    $stmt->execute($params);
     echo json_encode(['success' => true]);
 }
 else {

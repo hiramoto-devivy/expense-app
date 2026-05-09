@@ -2,10 +2,12 @@
 import { ref, onMounted, watch, computed } from 'vue';
 import { useExpenseStore } from '../store/expense';
 import { useAuthStore } from '../store/auth';
-import { Trash2, FileText, Image as ImageIcon, Lock, Unlock } from 'lucide-vue-next';
+import { useRouter } from 'vue-router';
+import { Trash2, Edit2, Lock, Unlock } from 'lucide-vue-next';
 
 const expenseStore = useExpenseStore();
 const authStore = useAuthStore();
+const router = useRouter();
 
 const currentDate = new Date();
 const currentYearMonth = ref(`${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`);
@@ -42,12 +44,25 @@ const deleteExpense = async (id: number) => {
   }
 };
 
+const editExpense = (id: number) => {
+  router.push(`/edit/${id}`);
+};
+
 const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat('ja-JP', { style: 'currency', currency: 'JPY' }).format(amount);
 };
 
 const openReceipt = (filename: string) => {
   window.open(`/api/uploads/${filename}`, '_blank');
+};
+
+const formatDate = (dateStr: string) => {
+  if (!dateStr) return '';
+  const parts = dateStr.split('-');
+  if (parts.length === 3) {
+    return `${parseInt(parts[2], 10)}日`;
+  }
+  return dateStr;
 };
 </script>
 
@@ -79,7 +94,7 @@ const openReceipt = (filename: string) => {
             <th>メモ</th>
             <th>金額</th>
             <th>領収書</th>
-            <th>アクション</th>
+            <th></th>
           </tr>
         </thead>
         <tbody>
@@ -87,22 +102,26 @@ const openReceipt = (filename: string) => {
             <td colspan="6" class="empty-state">今月の経費は見つかりませんでした。</td>
           </tr>
           <tr v-for="exp in expenseStore.expenses" :key="exp.id">
-            <td>{{ exp.date }}</td>
+            <td class="date-cell">{{ formatDate(exp.date) }}</td>
             <td><span class="badge">{{ exp.category_name }}</span></td>
-            <td>{{ exp.description || '-' }}</td>
+            <td>{{ exp.description ? '有' : 'ー' }}</td>
             <td class="amount-cell">{{ formatCurrency(exp.amount) }}</td>
             <td>
-              <button v-if="exp.receipt_file_path" @click="openReceipt(exp.receipt_file_path)" class="btn-icon" title="領収書を見る">
-                <FileText :size="18" v-if="exp.receipt_file_path.endsWith('.pdf')" />
-                <ImageIcon :size="18" v-else />
+              <button v-if="exp.receipt_file_path" @click="openReceipt(exp.receipt_file_path)" class="btn-icon text-primary" title="領収書を見る">
+                有
               </button>
-              <span v-else class="text-muted">-</span>
+              <span v-else class="text-muted">ー</span>
             </td>
             <td>
-              <button v-if="!isMonthClosed" @click="deleteExpense(exp.id)" class="btn-icon danger" title="削除">
-                <Trash2 :size="18" />
-              </button>
-              <span v-else class="text-muted"><Lock :size="14"/></span>
+              <div class="actions-wrapper">
+                <button v-if="!isMonthClosed" @click="editExpense(exp.id)" class="btn-icon" title="編集">
+                  <Edit2 :size="18" />
+                </button>
+                <button v-if="!isMonthClosed" @click="deleteExpense(exp.id)" class="btn-icon danger" title="削除">
+                  <Trash2 :size="18" />
+                </button>
+                <span v-if="isMonthClosed" class="text-muted"><Lock :size="14"/></span>
+              </div>
             </td>
           </tr>
         </tbody>
@@ -131,6 +150,20 @@ const openReceipt = (filename: string) => {
 .actions-right {
   display: flex;
   align-items: center;
+}
+@media (max-width: 768px) {
+  .header-actions {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .actions-right {
+    width: 100%;
+    justify-content: space-between;
+  }
+  .closed-alert {
+    font-size: 0.9rem;
+  }
 }
 .month-picker {
   width: auto;
@@ -188,6 +221,14 @@ const openReceipt = (filename: string) => {
   color: var(--danger);
   background: rgba(239, 68, 68, 0.1);
 }
+.actions-wrapper {
+  display: flex;
+  gap: 4px;
+}
+.text-primary {
+  color: var(--primary-color) !important;
+  font-weight: bold;
+}
 .empty-state {
   text-align: center;
   padding: 40px;
@@ -195,5 +236,15 @@ const openReceipt = (filename: string) => {
 }
 .text-muted {
   color: var(--text-muted);
+}
+.date-cell {
+  white-space: nowrap;
+  font-weight: 500;
+}
+@media (max-width: 768px) {
+  .expense-table th, .expense-table td {
+    padding: 10px 8px;
+    font-size: 0.9rem;
+  }
 }
 </style>

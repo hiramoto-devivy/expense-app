@@ -88,6 +88,20 @@ export const useExpenseStore = defineStore('expense', () => {
     }
   };
 
+  const updateExpense = async (id: number, payload: any) => {
+    try {
+      const res = await fetch(`/api/expenses.php?id=${id}`, {
+        method: 'PUT',
+        headers: getHeaders(),
+        body: JSON.stringify(payload)
+      });
+      return res.ok;
+    } catch (e) {
+      console.error('Failed to update expense', e);
+      return false;
+    }
+  };
+
   const deleteExpense = async (id: number) => {
     try {
       const res = await fetch(`/api/expenses.php?id=${id}`, {
@@ -105,5 +119,5 @@ export const useExpenseStore = defineStore('expense', () => {
     }
   };
 
-  return { expenses, categories, closedMonths, fetchCategories, fetchExpenses, fetchClosings, toggleClosing, addExpense, deleteExpense };
+  return { expenses, categories, closedMonths, fetchCategories, fetchExpenses, fetchClosings, toggleClosing, addExpense, updateExpense, deleteExpense };
 });

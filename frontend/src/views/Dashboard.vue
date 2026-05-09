@@ -152,4 +152,25 @@ const formatCurrency = (amount: number) => {
   text-align: right;
   font-weight: 600;
 }
+
+@media (max-width: 768px) {
+  .bar-row {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .bar-label {
+    width: 100%;
+  }
+  .bar-track {
+    width: calc(100% - 100px);
+    flex: none;
+  }
+  .bar-value {
+    width: auto;
+    flex: 1;
+  }
+  .amount {
+    font-size: 2rem;
+  }
+}
 </style>

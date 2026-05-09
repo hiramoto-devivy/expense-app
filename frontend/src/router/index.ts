@@ -11,6 +11,7 @@ const routes = [
   { path: '/', component: Dashboard, meta: { requiresAuth: true } },
   { path: '/expenses', component: ExpenseList, meta: { requiresAuth: true } },
   { path: '/add', component: AddExpense, meta: { requiresAuth: true } },
+  { path: '/edit/:id', component: AddExpense, meta: { requiresAuth: true } },
   { path: '/users', component: UserManagement, meta: { requiresAuth: true, requiresAdmin: true } },
 ];
 

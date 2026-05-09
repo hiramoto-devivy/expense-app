@@ -141,3 +141,44 @@ body {
   opacity: 0;
   transform: translateY(10px);
 }
+
+/* Responsive Styles */
+@media (max-width: 768px) {
+  .app-container {
+    padding: 1rem;
+  }
+  
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+  
+  .nav-links {
+    flex-wrap: wrap;
+    gap: 10px;
+    width: 100%;
+  }
+  
+  .nav-item {
+    font-size: 0.85rem;
+    padding: 6px 0;
+  }
+  
+  .glass-panel {
+    padding: 16px;
+  }
+  
+  .table-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  .form-input, .form-select {
+    font-size: 16px !important; /* 防止 iOS 自動ズーム */
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    -webkit-appearance: none;
+  }
+}
