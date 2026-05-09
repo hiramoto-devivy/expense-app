@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useAuthStore } from './store/auth';
-import { LogOut, LayoutDashboard, PlusCircle, List } from 'lucide-vue-next';
+import { LogOut, LayoutDashboard, PlusCircle, List, Users } from 'lucide-vue-next';
 
 const authStore = useAuthStore();
 // router removed since it's unused
@@ -23,6 +23,9 @@ const logout = () => {
         </router-link>
         <router-link to="/add" class="nav-item">
           <PlusCircle :size="18" /> 経費追加
+        </router-link>
+        <router-link v-if="authStore.user?.role === 'admin'" to="/users" class="nav-item">
+          <Users :size="18" /> ユーザー管理
         </router-link>
         <button @click="logout" class="btn btn-danger nav-item">
           <LogOut :size="18" style="margin-right: 4px;" /> ログアウト

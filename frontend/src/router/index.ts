@@ -4,12 +4,14 @@ import Dashboard from '../views/Dashboard.vue';
 import Login from '../views/Login.vue';
 import ExpenseList from '../views/ExpenseList.vue';
 import AddExpense from '../views/AddExpense.vue';
+import UserManagement from '../views/UserManagement.vue';
 
 const routes = [
   { path: '/login', component: Login, meta: { guest: true } },
   { path: '/', component: Dashboard, meta: { requiresAuth: true } },
   { path: '/expenses', component: ExpenseList, meta: { requiresAuth: true } },
   { path: '/add', component: AddExpense, meta: { requiresAuth: true } },
+  { path: '/users', component: UserManagement, meta: { requiresAuth: true, requiresAdmin: true } },
 ];
 
 const router = createRouter({
@@ -24,6 +26,11 @@ router.beforeEach(async (to, _from, next) => {
     if (!authStore.isAuthenticated()) {
       return next('/login');
     }
+
+    if (to.meta.requiresAdmin && authStore.user?.role !== 'admin') {
+      return next('/');
+    }
+
     // Verify token on first load if user is not set but token exists
     if (!authStore.user) {
       const isValid = await authStore.verifyToken();

@@ -11,7 +11,8 @@ try {
             CREATE TABLE IF NOT EXISTS Users (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 username TEXT UNIQUE NOT NULL,
-                password TEXT NOT NULL
+                password TEXT NOT NULL,
+                role TEXT DEFAULT 'user'
             )
         ");
 
@@ -38,8 +39,9 @@ try {
         ");
 
         // Insert default user
-        $stmt = $pdo->prepare("INSERT INTO Users (username, password) VALUES (?, ?)");
-        $stmt->execute(['admin', 'admin']);
+        $stmt = $pdo->prepare("INSERT INTO Users (username, password, role) VALUES (?, ?, ?)");
+        $stmt->execute(['admin', 'admin', 'admin']);
+        $stmt->execute(['user1', 'password', 'user']);
 
         // Insert default categories
         $categories = ['交通費', '交際費', '消耗品', '出張費'];

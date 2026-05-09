@@ -4,12 +4,20 @@ import { useRouter } from 'vue-router';
 
 export const useAuthStore = defineStore('auth', () => {
   const token = ref<string | null>(localStorage.getItem('token'));
-  const user = ref<any>(null);
+  const user = ref<{
+    id: number;
+    username: string;
+    role?: string;
+  } | null>(null);
   const router = useRouter();
 
   const isAuthenticated = () => !!token.value;
 
-  const setToken = (newToken: string, userData: any) => {
+  const setToken = (newToken: string, userData: {
+    id: number;
+    username: string;
+    role?: string;
+  }) => {
     token.value = newToken;
     user.value = userData;
     localStorage.setItem('token', newToken);
