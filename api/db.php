@@ -39,7 +39,10 @@ try {
 
     $pdo->exec("
         CREATE TABLE IF NOT EXISTS Closings (
-            year_month TEXT PRIMARY KEY
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            year_month TEXT NOT NULL,
+            user_id INTEGER NOT NULL,
+            UNIQUE(year_month, user_id)
         )
     ");
 

@@ -3,7 +3,7 @@ import { ref, onMounted, watch, computed } from 'vue';
 import { useExpenseStore } from '../store/expense';
 import { useAuthStore } from '../store/auth';
 import { useRouter } from 'vue-router';
-import { Trash2, Edit2, Lock, Unlock } from 'lucide-vue-next';
+import { Trash2, Edit2, Lock, Unlock, Users } from 'lucide-vue-next';
 
 const expenseStore = useExpenseStore();
 const authStore = useAuthStore();
@@ -16,27 +16,58 @@ const isMonthClosed = computed(() => {
   return expenseStore.closedMonths.includes(currentYearMonth.value);
 });
 
-const toggleMonthStatus = async () => {
-  if (!authStore.user || authStore.user.role !== 'admin') return;
-  const closing = !isMonthClosed.value;
-  const msg = closing ? 'この月を締めますか？（追加・編集・削除ができなくなります）' : 'この月の締めを解除しますか？';
-  if (confirm(msg)) {
-    const success = await expenseStore.toggleClosing(currentYearMonth.value, closing);
-    if (!success) alert('状態の変更に失敗しました');
-  }
-};
+const usersList = ref<any[]>([]);
 
 const fetchList = async () => {
   await expenseStore.fetchExpenses(currentYearMonth.value);
 };
 
-onMounted(() => {
+onMounted(async () => {
+  if (authStore.user?.role === 'admin') {
+    expenseStore.targetUserId = authStore.user.id;
+    try {
+      const res = await fetch('/api/users.php', {
+        headers: { 'Authorization': `Bearer ${authStore.token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        usersList.value = data.users;
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }
   fetchList();
 });
 
-watch(currentYearMonth, () => {
+watch([currentYearMonth, () => expenseStore.targetUserId], () => {
   fetchList();
 });
+
+const toggleMonthStatus = async (bulk = false) => {
+  if (!authStore.user || authStore.user.role !== 'admin') return;
+  
+  if (bulk) {
+    const msg = '【一括締め】\nこの月の全ユーザーの経費を締めますか？\n（全員の追加・編集・削除ができなくなります）';
+    if (confirm(msg)) {
+      const success = await expenseStore.toggleClosing(currentYearMonth.value, true, 'all');
+      if (success) {
+        alert('全ユーザーの経費を一括で締めました');
+        fetchList();
+      } else {
+        alert('状態の変更に失敗しました');
+      }
+    }
+    return;
+  }
+
+  const closing = !isMonthClosed.value;
+  const msg = closing ? '現在表示中のユーザーのこの月を締めますか？（追加・編集・削除ができなくなります）' : '現在表示中のユーザーのこの月の締めを解除しますか？';
+  if (confirm(msg)) {
+    const success = await expenseStore.toggleClosing(currentYearMonth.value, closing);
+    if (!success) alert('状態の変更に失敗しました');
+  }
+};
 
 const deleteExpense = async (id: number) => {
   if (confirm('この経費を削除してもよろしいですか？')) {
@@ -76,11 +107,23 @@ const formatDate = (dateStr: string) => {
     <div class="header-actions">
       <h2>経費一覧</h2>
       <div class="actions-right">
-        <button v-if="authStore.user?.role === 'admin'" @click="toggleMonthStatus" class="btn" :class="isMonthClosed ? 'btn-danger' : 'btn-primary'" style="margin-right: 12px;">
-          <Lock v-if="!isMonthClosed" :size="18" style="margin-right: 6px;" />
-          <Unlock v-else :size="18" style="margin-right: 6px;" />
-          {{ isMonthClosed ? '🔓 締めを解除' : '🔒 月を締める' }}
-        </button>
+        <select v-if="authStore.user?.role === 'admin'" v-model="expenseStore.targetUserId" class="form-select user-picker" style="margin-right: 12px; width: auto;">
+          <option :value="authStore.user.id">自分の経費</option>
+          <option v-for="u in usersList.filter(u => u.id !== authStore.user?.id)" :key="u.id" :value="u.id">
+            {{ u.username }} さんの経費
+          </option>
+        </select>
+
+        <div v-if="authStore.user?.role === 'admin'" class="admin-buttons" style="display: flex; gap: 8px; margin-right: 12px;">
+          <button @click="toggleMonthStatus(true)" class="btn btn-danger" title="全ユーザーのこの月を一括で締める">
+            <Users :size="18" style="margin-right: 6px;" /> 一括締め
+          </button>
+          <button @click="toggleMonthStatus(false)" class="btn" :class="isMonthClosed ? 'btn-danger' : 'btn-primary'">
+            <Lock v-if="!isMonthClosed" :size="18" style="margin-right: 6px;" />
+            <Unlock v-else :size="18" style="margin-right: 6px;" />
+            {{ isMonthClosed ? '🔓 解除' : '🔒 個人締め' }}
+          </button>
+        </div>
         <input type="month" v-model="currentYearMonth" class="form-input month-picker" />
       </div>
     </div>
@@ -159,7 +202,21 @@ const formatDate = (dateStr: string) => {
   }
   .actions-right {
     width: 100%;
-    justify-content: space-between;
+    flex-direction: column;
+    gap: 8px;
+    align-items: stretch;
+  }
+  .admin-buttons {
+    width: 100%;
+    margin-right: 0 !important;
+  }
+  .admin-buttons button {
+    flex: 1;
+    justify-content: center;
+  }
+  .user-picker {
+    margin-right: 0 !important;
+    width: 100% !important;
   }
   .closed-alert {
     font-size: 0.9rem;

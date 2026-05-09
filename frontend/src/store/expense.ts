@@ -6,6 +6,7 @@ export const useExpenseStore = defineStore('expense', () => {
   const expenses = ref<any[]>([]);
   const categories = ref<any[]>([]);
   const closedMonths = ref<string[]>([]);
+  const targetUserId = ref<number | 'all' | null>(null);
   const authStore = useAuthStore();
 
   const getHeaders = () => ({
@@ -28,7 +29,12 @@ export const useExpenseStore = defineStore('expense', () => {
   const fetchExpenses = async (yearMonth?: string) => {
     try {
       let url = '/api/expenses.php';
-      if (yearMonth) url += `?year_month=${yearMonth}`;
+      const params = new URLSearchParams();
+      if (yearMonth) params.append('year_month', yearMonth);
+      if (targetUserId.value !== null) params.append('target_user_id', targetUserId.value.toString());
+      
+      if (params.toString()) url += `?${params.toString()}`;
+      
       const res = await fetch(url, { headers: getHeaders() });
       if (res.ok) {
         const data = await res.json();
@@ -43,7 +49,11 @@ export const useExpenseStore = defineStore('expense', () => {
 
   const fetchClosings = async () => {
     try {
-      const res = await fetch('/api/closings.php', { headers: getHeaders() });
+      let url = '/api/closings.php';
+      if (targetUserId.value !== null) {
+        url += `?target_user_id=${targetUserId.value}`;
+      }
+      const res = await fetch(url, { headers: getHeaders() });
       if (res.ok) {
         const data = await res.json();
         closedMonths.value = data.closed_months;
@@ -53,12 +63,16 @@ export const useExpenseStore = defineStore('expense', () => {
     }
   };
 
-  const toggleClosing = async (yearMonth: string, isClosed: boolean) => {
+  const toggleClosing = async (yearMonth: string, isClosed: boolean, overrideTargetUserId?: 'all' | number) => {
     try {
       const res = await fetch('/api/closings.php', {
         method: 'POST',
         headers: getHeaders(),
-        body: JSON.stringify({ year_month: yearMonth, is_closed: isClosed })
+        body: JSON.stringify({ 
+          year_month: yearMonth, 
+          is_closed: isClosed,
+          target_user_id: overrideTargetUserId !== undefined ? overrideTargetUserId : targetUserId.value 
+        })
       });
       if (res.ok) {
         await fetchClosings();
@@ -119,5 +133,5 @@ export const useExpenseStore = defineStore('expense', () => {
     }
   };
 
-  return { expenses, categories, closedMonths, fetchCategories, fetchExpenses, fetchClosings, toggleClosing, addExpense, updateExpense, deleteExpense };
+  return { expenses, categories, closedMonths, targetUserId, fetchCategories, fetchExpenses, fetchClosings, toggleClosing, addExpense, updateExpense, deleteExpense };
 });
