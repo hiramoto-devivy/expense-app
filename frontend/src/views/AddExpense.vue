@@ -10,6 +10,7 @@ const router = useRouter();
 
 const isEditing = ref(false);
 const editId = ref<number | null>(null);
+const existingReceiptPath = ref<string | null>(null);
 
 const form = ref({
   date: new Date().toISOString().split('T')[0],
@@ -38,6 +39,7 @@ onMounted(async () => {
       form.value.category_id = exp.category_id;
       form.value.amount = exp.amount;
       form.value.description = exp.description || '';
+      existingReceiptPath.value = exp.receipt_file_path;
       // We don't populate receipt_base64, it requires a new upload to overwrite
     } else {
       alert('指定された経費が見つかりません');
@@ -139,9 +141,15 @@ const submit = async () => {
           <label class="form-label">領収書（画像/PDF）</label>
           <div class="file-upload-wrapper">
             <input type="file" id="file" @change="handleFileUpload" accept="image/*,application/pdf" class="file-input" />
-            <label for="file" class="file-label">
+            <label for="file" class="file-label" :class="{ 'has-existing': existingReceiptPath && !form.receipt_name }">
               <UploadCloud :size="24" class="upload-icon" />
-              <span v-if="form.receipt_name">{{ form.receipt_name }}</span>
+              <div v-if="form.receipt_name" class="file-info">
+                <strong>選択中:</strong> {{ form.receipt_name }}
+              </div>
+              <div v-else-if="existingReceiptPath" class="file-info">
+                <strong>登録済み:</strong> {{ existingReceiptPath.split('/').pop() }}
+                <div class="hint">クリックしてファイルを変更</div>
+              </div>
               <span v-else>クリックしてアップロード、またはドラッグ＆ドロップ</span>
             </label>
           </div>
@@ -213,6 +221,19 @@ const submit = async () => {
 }
 .upload-icon {
   margin-bottom: 8px;
+}
+.file-info {
+  text-align: center;
+}
+.hint {
+  font-size: 0.8rem;
+  margin-top: 4px;
+  opacity: 0.8;
+}
+.has-existing {
+  border-style: solid;
+  background: rgba(99, 102, 241, 0.05);
+  color: var(--primary-color);
 }
 .form-actions {
   display: flex;
