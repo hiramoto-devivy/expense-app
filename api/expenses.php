@@ -57,8 +57,16 @@ elseif ($method === 'POST') {
 
     $receiptPath = null;
     if (!empty($input['receipt_base64']) && !empty($input['receipt_name'])) {
+        $expenseDate = $input['date'];
+        $yearMonthDir = str_replace('-', '', substr($expenseDate, 0, 7));
+        $targetDir = __DIR__ . '/uploads/' . $yearMonthDir . '/';
+        
+        if (!file_exists($targetDir)) {
+            mkdir($targetDir, 0777, true);
+        }
+
         $ext = strtolower(pathinfo($input['receipt_name'], PATHINFO_EXTENSION));
-        $filename = time() . '-' . rand(100, 999) . '.' . $ext;
+        $newFilename = date('Ymd_His') . '_' . $user['id'] . '.' . $ext;
         
         $base64 = $input['receipt_base64'];
         if (strpos($base64, ',') !== false) {
@@ -66,8 +74,8 @@ elseif ($method === 'POST') {
         }
         
         $data = base64_decode($base64);
-        file_put_contents(__DIR__ . '/uploads/' . $filename, $data);
-        $receiptPath = $filename;
+        file_put_contents($targetDir . $newFilename, $data);
+        $receiptPath = $yearMonthDir . '/' . $newFilename;
     }
 
     $stmt = $pdo->prepare("
@@ -98,6 +106,11 @@ elseif ($method === 'DELETE' && $id) {
         exit;
     }
 
+    // Get file path before deleting from DB
+    $stmtFile = $pdo->prepare('SELECT receipt_file_path FROM Expenses WHERE id = ?');
+    $stmtFile->execute([$id]);
+    $filePath = $stmtFile->fetchColumn();
+
     if ($user['role'] === 'admin') {
         $stmt = $pdo->prepare('DELETE FROM Expenses WHERE id = ?');
         $stmt->execute([$id]);
@@ -105,6 +118,15 @@ elseif ($method === 'DELETE' && $id) {
         $stmt = $pdo->prepare('DELETE FROM Expenses WHERE id = ? AND user_id = ?');
         $stmt->execute([$id, $user['id']]);
     }
+
+    // Delete file if it exists
+    if ($filePath) {
+        $fullPath = __DIR__ . '/uploads/' . $filePath;
+        if (file_exists($fullPath)) {
+            unlink($fullPath);
+        }
+    }
+
     echo json_encode(['success' => true]);
 }
 elseif ($method === 'PUT' && $id) {
@@ -139,8 +161,27 @@ elseif ($method === 'PUT' && $id) {
     ];
 
     if (!empty($input['receipt_base64']) && !empty($input['receipt_name'])) {
+        // Delete old file if exists
+        $stmtOld = $pdo->prepare('SELECT receipt_file_path FROM Expenses WHERE id = ?');
+        $stmtOld->execute([$id]);
+        $oldPath = $stmtOld->fetchColumn();
+        if ($oldPath) {
+            $fullOldPath = __DIR__ . '/uploads/' . $oldPath;
+            if (file_exists($fullOldPath)) {
+                unlink($fullOldPath);
+            }
+        }
+
+        $expenseDate = $input['date'];
+        $yearMonthDir = str_replace('-', '', substr($expenseDate, 0, 7));
+        $targetDir = __DIR__ . '/uploads/' . $yearMonthDir . '/';
+        
+        if (!file_exists($targetDir)) {
+            mkdir($targetDir, 0777, true);
+        }
+
         $ext = strtolower(pathinfo($input['receipt_name'], PATHINFO_EXTENSION));
-        $filename = time() . '-' . rand(100, 999) . '.' . $ext;
+        $newFilename = date('Ymd_His') . '_' . $user['id'] . '.' . $ext;
         
         $base64 = $input['receipt_base64'];
         if (strpos($base64, ',') !== false) {
@@ -148,10 +189,10 @@ elseif ($method === 'PUT' && $id) {
         }
         
         $data = base64_decode($base64);
-        file_put_contents(__DIR__ . '/uploads/' . $filename, $data);
+        file_put_contents($targetDir . $newFilename, $data);
         
         $updateReceiptSql = ", receipt_file_path = ?";
-        $params[] = $filename;
+        $params[] = $yearMonthDir . '/' . $newFilename;
     }
 
     $params[] = $id;

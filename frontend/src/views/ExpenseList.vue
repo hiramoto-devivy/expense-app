@@ -3,11 +3,23 @@ import { ref, onMounted, watch, computed } from 'vue';
 import { useExpenseStore } from '../store/expense';
 import { useAuthStore } from '../store/auth';
 import { useRouter } from 'vue-router';
-import { Trash2, Edit2, Lock, Unlock, Users } from 'lucide-vue-next';
+import { Trash2, Edit2, Lock, Unlock, Users, MessageSquare, X, FileText } from 'lucide-vue-next';
 
 const expenseStore = useExpenseStore();
 const authStore = useAuthStore();
 const router = useRouter();
+
+const selectedMemo = ref<string | null>(null);
+const showMemoModal = ref(false);
+
+const openMemo = (memo: string) => {
+  selectedMemo.value = memo;
+  showMemoModal.value = true;
+};
+
+const closeMemo = () => {
+  showMemoModal.value = false;
+};
 
 const currentDate = new Date();
 const currentYearMonth = ref(`${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`);
@@ -147,11 +159,16 @@ const formatDate = (dateStr: string) => {
           <tr v-for="exp in expenseStore.expenses" :key="exp.id">
             <td class="date-cell">{{ formatDate(exp.date) }}</td>
             <td><span class="badge">{{ exp.category_name }}</span></td>
-            <td>{{ exp.description ? '有' : 'ー' }}</td>
+            <td>
+              <button v-if="exp.description" @click="openMemo(exp.description)" class="btn-icon text-primary" title="メモを見る">
+                <MessageSquare :size="18" />
+              </button>
+              <span v-else class="text-muted">ー</span>
+            </td>
             <td class="amount-cell">{{ formatCurrency(exp.amount) }}</td>
             <td>
               <button v-if="exp.receipt_file_path" @click="openReceipt(exp.receipt_file_path)" class="btn-icon text-primary" title="領収書を見る">
-                有
+                <FileText :size="18" />
               </button>
               <span v-else class="text-muted">ー</span>
             </td>
@@ -170,6 +187,26 @@ const formatDate = (dateStr: string) => {
         </tbody>
       </table>
     </div>
+
+    <!-- Memo Modal -->
+    <transition name="fade">
+      <div v-if="showMemoModal" class="modal-overlay" @click.self="closeMemo">
+        <div class="glass modal-content">
+          <div class="modal-header">
+            <h3>メモ内容</h3>
+            <button @click="closeMemo" class="btn-icon">
+              <X :size="20" />
+            </button>
+          </div>
+          <div class="modal-body">
+            <p>{{ selectedMemo }}</p>
+          </div>
+          <div class="modal-footer">
+            <button @click="closeMemo" class="btn btn-primary">閉じる</button>
+          </div>
+        </div>
+      </div>
+    </transition>
   </div>
 </template>
 
@@ -302,6 +339,66 @@ const formatDate = (dateStr: string) => {
   .expense-table th, .expense-table td {
     padding: 10px 8px;
     font-size: 0.9rem;
+  }
+}
+
+/* Modal Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  width: 90%;
+  max-width: 500px;
+  padding: 24px;
+  background: var(--surface-color);
+  animation: modal-enter 0.3s ease;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  border-bottom: 1px solid rgba(0,0,0,0.05);
+  padding-bottom: 12px;
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.modal-body {
+  padding: 12px 0 24px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+}
+
+@keyframes modal-enter {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
   }
 }
 </style>
