@@ -121,7 +121,7 @@ const formatDate = (dateStr: string) => {
           <button @click="toggleMonthStatus(false)" class="btn" :class="isMonthClosed ? 'btn-danger' : 'btn-primary'">
             <Lock v-if="!isMonthClosed" :size="18" style="margin-right: 6px;" />
             <Unlock v-else :size="18" style="margin-right: 6px;" />
-            {{ isMonthClosed ? '🔓 解除' : '🔒 個人締め' }}
+            {{ isMonthClosed ? '解除' : '個人締め' }}
           </button>
         </div>
         <input type="month" v-model="currentYearMonth" class="form-input month-picker" />
