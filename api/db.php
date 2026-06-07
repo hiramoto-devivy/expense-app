@@ -11,9 +11,25 @@ try {
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             username TEXT UNIQUE NOT NULL,
             password TEXT NOT NULL,
-            role TEXT DEFAULT 'user'
+            display_name TEXT,
+            role TEXT DEFAULT 'user',
+            bank_code TEXT,
+            branch_code TEXT,
+            account_type TEXT,
+            account_number TEXT,
+            account_holder TEXT
         )
     ");
+
+    // Add columns to existing table if they don't exist
+    $columns = ['display_name', 'bank_code', 'branch_code', 'account_type', 'account_number', 'account_holder'];
+    foreach ($columns as $column) {
+        try {
+            $pdo->exec("ALTER TABLE Users ADD COLUMN $column TEXT");
+        } catch (PDOException $e) {
+            // Ignore if column already exists
+        }
+    }
 
     $pdo->exec("
         CREATE TABLE IF NOT EXISTS Categories (
@@ -46,8 +62,17 @@ try {
         )
     ");
 
-    if ($isNew) {
+    $pdo->exec("
+        CREATE TABLE IF NOT EXISTS CodeMaster (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            code_group TEXT NOT NULL,
+            code_value TEXT NOT NULL,
+            display_name TEXT NOT NULL,
+            UNIQUE(code_group, code_value)
+        )
+    ");
 
+    if ($isNew) {
         // Insert default user
         $stmt = $pdo->prepare("INSERT INTO Users (username, password, role) VALUES (?, ?, ?)");
         $stmt->execute(['admin', 'admin', 'admin']);
@@ -60,6 +85,15 @@ try {
             $stmt->execute([$cat]);
         }
     }
+
+    // Ensure initial codes exist
+    $stmtCheck = $pdo->query("SELECT COUNT(*) FROM CodeMaster WHERE code_group = 'account_type'");
+    if ($stmtCheck->fetchColumn() == 0) {
+        $stmtCode = $pdo->prepare("INSERT INTO CodeMaster (code_group, code_value, display_name) VALUES (?, ?, ?)");
+        $stmtCode->execute(['account_type', '1', '普通']);
+        $stmtCode->execute(['account_type', '2', '当座']);
+    }
+
 } catch (PDOException $e) {
     http_response_code(500);
     echo json_encode(['error' => 'Database error: ' . $e->getMessage()]);

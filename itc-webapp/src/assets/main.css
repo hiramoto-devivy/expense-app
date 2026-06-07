@@ -78,6 +78,17 @@ body {
   color: white;
 }
 
+.btn-secondary {
+  background: #3b82f6; /* Blue 500 */
+  color: white;
+  box-shadow: 0 4px 14px 0 rgba(59, 130, 246, 0.3);
+}
+.btn-secondary:hover {
+  background: #2563eb;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+}
+
 /* Forms */
 .form-group {
   margin-bottom: 1rem;
@@ -193,3 +204,32 @@ body {
     -webkit-appearance: none;
   }
 }
+
+/* Icon Buttons (Borderless) */
+.btn-icon {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-muted);
+  padding: 6px;
+  border-radius: 4px;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-icon:hover {
+  background: rgba(0,0,0,0.05);
+  color: var(--text-main);
+}
+
+.btn-icon.danger {
+  color: var(--danger);
+}
+
+.btn-icon.danger:hover {
+  color: var(--danger);
+  background: rgba(239, 68, 68, 0.1);
+}
+

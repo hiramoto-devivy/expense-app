@@ -5,6 +5,9 @@ import Login from '../views/Login.vue';
 import ExpenseList from '../views/ExpenseList.vue';
 import AddExpense from '../views/AddExpense.vue';
 import UserManagement from '../views/UserManagement.vue';
+import ExportSettings from '../views/ExportSettings.vue';
+import CodeManagement from '../views/CodeManagement.vue';
+import ClosingManagement from '../views/ClosingManagement.vue';
 
 const routes = [
   { path: '/login', component: Login, meta: { guest: true } },
@@ -13,6 +16,9 @@ const routes = [
   { path: '/add', component: AddExpense, meta: { requiresAuth: true } },
   { path: '/edit/:id', component: AddExpense, meta: { requiresAuth: true } },
   { path: '/users', component: UserManagement, meta: { requiresAuth: true, requiresAdmin: true } },
+  { path: '/export', component: ExportSettings, meta: { requiresAuth: true, requiresAdmin: true } },
+  { path: '/codes', component: CodeManagement, meta: { requiresAuth: true, requiresAdmin: true } },
+  { path: '/closing', component: ClosingManagement, meta: { requiresAuth: true, requiresAdmin: true } },
 ];
 
 const router = createRouter({

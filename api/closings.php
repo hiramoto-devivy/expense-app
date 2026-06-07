@@ -16,14 +16,25 @@ $user = auth_middleware();
 $method = $_SERVER['REQUEST_METHOD'];
 
 if ($method === 'GET') {
-    $targetUserId = $_GET['target_user_id'] ?? $user['id'];
-    if ($user['role'] !== 'admin') {
-        $targetUserId = $user['id'];
+    $yearMonth = $_GET['year_month'] ?? null;
+    $targetUserId = $_GET['target_user_id'] ?? null;
+
+    if ($yearMonth && $user['role'] === 'admin') {
+        // Return all closings for this month
+        $stmt = $pdo->prepare('SELECT user_id FROM Closings WHERE year_month = ?');
+        $stmt->execute([$yearMonth]);
+        $closings = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        echo json_encode(['closings' => $closings]);
+    } else {
+        $targetUserId = $targetUserId ?? $user['id'];
+        if ($user['role'] !== 'admin') {
+            $targetUserId = $user['id'];
+        }
+        $stmt = $pdo->prepare('SELECT year_month FROM Closings WHERE user_id = ?');
+        $stmt->execute([$targetUserId]);
+        $closedMonths = $stmt->fetchAll(PDO::FETCH_COLUMN);
+        echo json_encode(['closed_months' => $closedMonths]);
     }
-    $stmt = $pdo->prepare('SELECT year_month FROM Closings WHERE user_id = ?');
-    $stmt->execute([$targetUserId]);
-    $closedMonths = $stmt->fetchAll(PDO::FETCH_COLUMN);
-    echo json_encode(['closed_months' => $closedMonths]);
 }
 elseif ($method === 'POST') {
     if (!isset($user['role']) || $user['role'] !== 'admin') {

@@ -16,12 +16,22 @@ $input = json_decode(file_get_contents('php://input'), true);
 $username = $input['username'] ?? '';
 $password = $input['password'] ?? '';
 
-$stmt = $pdo->prepare('SELECT id, username, role FROM Users WHERE username = ? AND password = ?');
+$stmt = $pdo->prepare('SELECT id, username, display_name, role, bank_code, branch_code, account_type, account_number, account_holder FROM Users WHERE username = ? AND password = ?');
 $stmt->execute([$username, $password]);
 $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
 if ($user) {
-    $token = jwt_sign(['id' => $user['id'], 'username' => $user['username'], 'role' => $user['role']], 30);
+    $token = jwt_sign([
+        'id' => $user['id'], 
+        'username' => $user['username'], 
+        'display_name' => $user['display_name'],
+        'role' => $user['role'],
+        'bank_code' => $user['bank_code'],
+        'branch_code' => $user['branch_code'],
+        'account_type' => $user['account_type'],
+        'account_number' => $user['account_number'],
+        'account_holder' => $user['account_holder']
+    ], 30);
     echo json_encode(['token' => $token, 'user' => $user]);
 } else {
     http_response_code(401);

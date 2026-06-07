@@ -53,6 +53,9 @@ function auth_middleware() {
     if (!$authHeader && isset($_SERVER['HTTP_AUTHORIZATION'])) {
         $authHeader = $_SERVER['HTTP_AUTHORIZATION'];
     }
+    if (!$authHeader && isset($_SERVER['REDIRECT_HTTP_AUTHORIZATION'])) {
+        $authHeader = $_SERVER['REDIRECT_HTTP_AUTHORIZATION'];
+    }
 
     if (strpos($authHeader, 'Bearer ') === 0) {
         $token = substr($authHeader, 7);

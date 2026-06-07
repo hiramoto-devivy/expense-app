@@ -8,6 +8,7 @@ export const useAuthStore = defineStore('auth', () => {
     id: number;
     username: string;
     role?: string;
+    display_name?: string;
   } | null>(null);
   const router = useRouter();
 
@@ -17,6 +18,7 @@ export const useAuthStore = defineStore('auth', () => {
     id: number;
     username: string;
     role?: string;
+    display_name?: string;
   }) => {
     token.value = newToken;
     user.value = userData;

@@ -15,6 +15,16 @@ require_once 'jwt.php';
 $user = auth_middleware();
 $method = $_SERVER['REQUEST_METHOD'];
 
+// Handle method override
+if ($method === 'POST') {
+    $tempInput = json_decode(file_get_contents('php://input'), true);
+    if (isset($tempInput['_method'])) {
+        $method = strtoupper($tempInput['_method']);
+    } elseif (isset($_GET['_method'])) {
+        $method = strtoupper($_GET['_method']);
+    }
+}
+
 // Helper to get ID from query string since we're using query params for routing simplicity without rewrite rules
 $id = $_GET['id'] ?? null;
 
@@ -38,7 +48,7 @@ if ($method === 'GET') {
         $query .= ' AND year_month = ?';
         $params[] = $yearMonth;
     }
-    $query .= ' ORDER BY date DESC';
+    $query .= ' ORDER BY year_month ASC, date ASC';
     
     $stmt = $pdo->prepare($query);
     $stmt->execute($params);
@@ -49,15 +59,9 @@ if ($method === 'GET') {
 elseif ($method === 'POST') {
     $input = json_decode(file_get_contents('php://input'), true);
     
-    if (is_month_closed($pdo, $input['year_month'], $user['id'])) {
-        http_response_code(403);
-        echo json_encode(['error' => 'This month is closed']);
-        exit;
-    }
-
     $receiptPath = null;
     if (!empty($input['receipt_base64']) && !empty($input['receipt_name'])) {
-        $expenseDate = $input['date'];
+        $expenseDate = isset($input['expenses']) && count($input['expenses']) > 0 ? $input['expenses'][0]['date'] : $input['date'];
         $yearMonthDir = str_replace('-', '', substr($expenseDate, 0, 7));
         $targetDir = __DIR__ . '/uploads/' . $yearMonthDir . '/';
         
@@ -78,22 +82,48 @@ elseif ($method === 'POST') {
         $receiptPath = $yearMonthDir . '/' . $newFilename;
     }
 
-    $stmt = $pdo->prepare("
-        INSERT INTO Expenses (user_id, category_id, amount, date, year_month, description, receipt_file_path)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-    ");
-    $stmt->execute([
-        $user['id'],
-        $input['category_id'],
-        $input['amount'],
-        $input['date'],
-        $input['year_month'],
-        $input['description'] ?? '',
-        $receiptPath
-    ]);
-    
-    http_response_code(201);
-    echo json_encode(['id' => $pdo->lastInsertId()]);
+    $insertedIds = [];
+    $pdo->beginTransaction();
+    try {
+        if (isset($input['expenses']) && is_array($input['expenses'])) {
+            $items = $input['expenses'];
+        } else {
+            $items = [$input];
+        }
+
+        $stmt = $pdo->prepare("
+            INSERT INTO Expenses (user_id, category_id, amount, date, year_month, description, receipt_file_path)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        ");
+
+        foreach ($items as $item) {
+            if (is_month_closed($pdo, $item['year_month'], $user['id'])) {
+                $pdo->rollBack();
+                http_response_code(403);
+                echo json_encode(['error' => 'This month is closed for one of the expenses']);
+                exit;
+            }
+
+            $stmt->execute([
+                $user['id'],
+                $item['category_id'],
+                $item['amount'],
+                $item['date'],
+                $item['year_month'],
+                $item['description'] ?? '',
+                $receiptPath
+            ]);
+            $insertedIds[] = $pdo->lastInsertId();
+        }
+        
+        $pdo->commit();
+        http_response_code(201);
+        echo json_encode(['ids' => $insertedIds]);
+    } catch (Exception $e) {
+        $pdo->rollBack();
+        http_response_code(500);
+        echo json_encode(['error' => 'Failed to save expenses']);
+    }
 }
 elseif ($method === 'DELETE' && $id) {
     // Check if the expense's month is closed

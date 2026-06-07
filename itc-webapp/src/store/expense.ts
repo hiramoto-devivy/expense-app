@@ -104,8 +104,8 @@ export const useExpenseStore = defineStore('expense', () => {
 
   const updateExpense = async (id: number, payload: any) => {
     try {
-      const res = await fetch(`/api/expenses.php?id=${id}`, {
-        method: 'PUT',
+      const res = await fetch(`/api/expenses.php?id=${id}&_method=PUT`, {
+        method: 'POST',
         headers: getHeaders(),
         body: JSON.stringify(payload)
       });
@@ -118,8 +118,8 @@ export const useExpenseStore = defineStore('expense', () => {
 
   const deleteExpense = async (id: number) => {
     try {
-      const res = await fetch(`/api/expenses.php?id=${id}`, {
-        method: 'DELETE',
+      const res = await fetch(`/api/expenses.php?id=${id}&_method=DELETE`, {
+        method: 'POST',
         headers: getHeaders()
       });
       if (res.ok) {

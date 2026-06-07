@@ -46,7 +46,7 @@ const formatCurrency = (amount: number) => {
 <template>
   <div class="dashboard fade-enter-active">
     <div class="welcome-box glass glass-panel">
-      <h2>こんにちは、{{ authStore.user?.username }}さん！ 👋</h2>
+      <h2>こんにちは、{{ authStore.user?.display_name || authStore.user?.username }}さん！ 👋</h2>
       <p>今月の経費サマリーはこちらです。</p>
     </div>
 

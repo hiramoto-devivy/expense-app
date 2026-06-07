@@ -50,13 +50,13 @@ const login = async () => {
       
       <form @submit.prevent="login">
         <div class="form-group">
-          <label class="form-label">ユーザー名</label>
-          <input v-model="username" type="text" class="form-input" required />
+          <label class="form-label">ユーザー名 (英数字・ハイフン)</label>
+          <input v-model="username" type="text" class="form-input" required pattern="[a-zA-Z0-9\-]+" title="半角英数字、ハイフンのみ" />
         </div>
         
         <div class="form-group">
-          <label class="form-label">パスワード</label>
-          <input v-model="password" type="password" class="form-input" required />
+          <label class="form-label">パスワード (英数字)</label>
+          <input v-model="password" type="password" class="form-input" required pattern="[a-zA-Z0-9]+" title="半角英数字のみ" />
         </div>
         
         <button type="submit" class="btn btn-primary w-100" :disabled="isLoading">
