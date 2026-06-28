@@ -14,19 +14,29 @@ const existingReceiptPath = ref<string | null>(null);
 
 interface ExpenseItem {
   date: string;
+  year_month: string;
   category_id: string;
   amount: string;
   description: string;
+  _userModifiedMonth?: boolean;
 }
 
 const items = ref<ExpenseItem[]>([
   {
     date: new Date().toISOString().split('T')[0],
+    year_month: new Date().toISOString().slice(0, 7),
     category_id: '',
     amount: '',
-    description: ''
+    description: '',
+    _userModifiedMonth: false
   }
 ]);
+
+const handleDateChange = (item: ExpenseItem) => {
+  if (!item._userModifiedMonth && item.date) {
+    item.year_month = item.date.slice(0, 7);
+  }
+};
 
 const receipt = ref({
   base64: '',
@@ -36,7 +46,7 @@ const receipt = ref({
 const isSubmitting = ref(false);
 
 const hasClosedMonth = computed(() => {
-  return items.value.some(item => item.date && expenseStore.closedMonths.includes(item.date.slice(0, 7)));
+  return items.value.some(item => item.year_month && expenseStore.closedMonths.includes(item.year_month));
 });
 
 onMounted(async () => {
@@ -51,9 +61,11 @@ onMounted(async () => {
     const exp = expenseStore.expenses.find(e => e.id === editId.value);
     if (exp) {
       items.value[0].date = exp.date;
+      items.value[0].year_month = exp.year_month;
       items.value[0].category_id = exp.category_id;
       items.value[0].amount = exp.amount;
       items.value[0].description = exp.description || '';
+      items.value[0]._userModifiedMonth = true;
       existingReceiptPath.value = exp.receipt_file_path;
     } else {
       alert('指定された経費が見つかりません');
@@ -92,9 +104,11 @@ const addItem = () => {
   const lastItem = items.value[items.value.length - 1];
   items.value.push({
     date: lastItem.date,
+    year_month: lastItem.year_month,
     category_id: '',
     amount: '',
-    description: ''
+    description: '',
+    _userModifiedMonth: lastItem._userModifiedMonth
   });
 };
 
@@ -104,7 +118,7 @@ const removeItem = (index: number) => {
 
 const submit = async () => {
   for (const item of items.value) {
-    if (!item.category_id || !item.amount || !item.date) {
+    if (!item.category_id || !item.amount || !item.date || !item.year_month) {
       alert('必須項目をすべて入力してください');
       return;
     }
@@ -122,7 +136,6 @@ const submit = async () => {
     const item = items.value[0];
     const payload = {
       ...item,
-      year_month: item.date.slice(0, 7),
       amount: parseInt(item.amount, 10),
       receipt_base64: receipt.value.base64,
       receipt_name: receipt.value.name
@@ -132,7 +145,6 @@ const submit = async () => {
     const payload = {
       expenses: items.value.map(item => ({
         ...item,
-        year_month: item.date.slice(0, 7),
         amount: parseInt(item.amount, 10)
       })),
       receipt_base64: receipt.value.base64,
@@ -176,9 +188,16 @@ const submit = async () => {
             <div class="form-grid">
               <div class="form-group">
                 <label class="form-label">日付 *</label>
-                <input v-model="item.date" type="date" class="form-input" required />
+                <input v-model="item.date" type="date" class="form-input" @change="handleDateChange(item)" required />
               </div>
               
+              <div class="form-group">
+                <label class="form-label">計上月 *</label>
+                <input v-model="item.year_month" type="month" class="form-input" @change="item._userModifiedMonth = true" required />
+              </div>
+            </div>
+
+            <div class="form-grid" style="margin-top: 16px;">
               <div class="form-group">
                 <label class="form-label">カテゴリ *</label>
                 <select v-model="item.category_id" class="form-select" required>
@@ -188,11 +207,11 @@ const submit = async () => {
                   </option>
                 </select>
               </div>
-            </div>
-            
-            <div class="form-group">
-              <label class="form-label">金額 (円) *</label>
-              <input v-model="item.amount" type="number" min="1" class="form-input" required placeholder="例：1500" />
+
+              <div class="form-group">
+                <label class="form-label">金額 (円) *</label>
+                <input v-model="item.amount" type="number" min="1" class="form-input" required placeholder="例：1500" />
+              </div>
             </div>
             
             <div class="form-group">

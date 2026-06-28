@@ -78,7 +78,7 @@ const formatDate = (dateStr: string) => {
   if (!dateStr) return '';
   const parts = dateStr.split('-');
   if (parts.length === 3) {
-    return `${parseInt(parts[2], 10)}日`;
+    return `${parseInt(parts[1], 10)}/${parseInt(parts[2], 10)}`;
   }
   return dateStr;
 };
